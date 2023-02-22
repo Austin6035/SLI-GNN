@@ -77,13 +77,21 @@ class Net(torch.nn.Module):
 
     def __init__(self, orig_bond_fea_len=51, nbr_fea_len=128, atom_fea_len=64, n_conv=3, h_fea_len=128, l1=1,
                  l2=1, classification=False, n_classes=2, attention=False, dynamic_attention=False, n_heads=1,
-                 max_num_nbr=12, pooling='mean', p=0, properties_list=None):
+                 max_num_nbr=12, pooling='mean', p=0, properties_list=None, atom_ref=None):
         super(Net, self).__init__()
         self.classification = classification
         self.pooling = pooling
         self.bn = nn.BatchNorm1d(atom_fea_len)
         self.atom_embedding = Dynamic_Atom_Embedding(atom_fea_len, properties_list=properties_list)
         self.bond_embedding = nn.Embedding(orig_bond_fea_len, nbr_fea_len)
+
+        # U0参考值
+        if atom_ref is not None:
+            self.atomref_layer = nn.Embedding.from_pretrained(
+                torch.from_numpy(atom_ref.astype(np.float32))
+            )
+        else:
+            self.atomref_layer = None
 
         self.p = p
         if attention:
@@ -121,6 +129,12 @@ class Net(torch.nn.Module):
     def forward(self, data):
         x, edge_index, edge_weight, y = data.x, data.edge_index, data.edge_attr, data.y
         batch = data.batch
+
+        if self.atomref_layer is not None:
+            atomic_numbers = x.squeeze(1)
+            energies = self.atomref_layer(atomic_numbers)
+            energies = torch_geometric.nn.global_add_pool(energies, batch)
+
         x = self.atom_embedding(x)
         edge_weight = self.bond_embedding(edge_weight)
         info = x
@@ -159,4 +173,6 @@ class Net(torch.nn.Module):
 
         if self.p > 0:
             x = self.dropout(x)
+        if self.atomref_layer is not None:
+            x = x + energies
         return x

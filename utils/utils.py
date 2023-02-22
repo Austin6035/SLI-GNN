@@ -77,15 +77,20 @@ def save_checkpoint(state, is_best, transfer=False, filename='checkpoint.pth.tar
 
 class Normalizer(object):
 
-    def __init__(self, tensor):
+    def __init__(self, tensor, atom_ref):
         """tensor is taken as a sample to calculate the mean and std"""
         self.mean = torch.mean(tensor)
         self.std = torch.std(tensor)
+        self.atom_ref = atom_ref
 
     def norm(self, tensor):
+        if self.atom_ref is not None:
+            return tensor
         return (tensor - self.mean) / self.std
 
     def denorm(self, normed_tensor):
+        if self.atom_ref is not None:
+            return normed_tensor
         return normed_tensor * self.std + self.mean
 
     def state_dict(self):

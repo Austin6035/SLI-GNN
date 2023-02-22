@@ -53,8 +53,6 @@ test_group.add_argument('--test-ratio', default=0.1, type=float, metavar='N',
                         help='percentage of test data to be loaded (default 0.2)')
 test_group.add_argument('--test-size', default=None, type=int, metavar='N',
                         help='number of test data to be loaded (default 1000)')
-parser.add_argument('--optim-method', default='Adam', type=str, metavar='SGD',
-                    help='choose an optimizer, SGD or Adam, (default: SGD)')
 parser.add_argument('--atom-fea-len', default=208, type=int, metavar='N',
                     help='number of hidden atom features in conv layers')
 parser.add_argument('--h-fea-len', default=154, type=int, metavar='N',
@@ -124,19 +122,7 @@ def main():
                              train_size=args.train_size,
                              valid_size=args.valid_size,
                              test_size=args.test_size)
-    logger.info('Normalizer initializing')
-    if args.task == 'classification':
-        normalizer = Normalizer(torch.zeros(2))
-        normalizer.load_state_dict({'mean': 0., 'std': 1.})
-    else:
-        if len(dataset) < 500:
-            logger.warning('Dataset has less than 500 data points. '
-                           'Lower accuracy is expected. ')
-            sample_target = [dataset[i].y for i in range(len(dataset))]
-        else:
-            sample_target = [dataset[i].y for i in sample(range(len(dataset)), 500)]
-        normalizer = Normalizer(torch.tensor(sample_target))
-    logger.info('Model initializing')
+
     orig_bond_fea_len = dataset.bond_feature_encoder.num_category
 
     model = Net(orig_bond_fea_len=orig_bond_fea_len,
@@ -154,23 +140,30 @@ def main():
                 pooling=args.pooling,
                 p=args.dropout_p,
                 properties_list=properties_list,
-                )
+                atom_ref=None)
     model.to(device)
+
+    logger.info('Normalizer initializing')
+    if args.task == 'classification':
+        normalizer = Normalizer(torch.zeros(2))
+        normalizer.load_state_dict({'mean': 0., 'std': 1.})
+    else:
+        if len(dataset) < 500:
+            logger.warning('Dataset has less than 500 data points. '
+                           'Lower accuracy is expected. ')
+            sample_target = [dataset[i].y for i in range(len(dataset))]
+        else:
+            sample_target = [dataset[i].y for i in sample(range(len(dataset)), 500)]
+        normalizer = Normalizer(torch.tensor(sample_target), model.atomref_layer)
+    logger.info('Model initializing')
 
     if args.task == 'classification':
         criterion = nn.CrossEntropyLoss()
     else:
         criterion = nn.MSELoss()
 
-    if args.optim_method == 'SGD':
-        optimizer = optim.SGD(model.parameters(), args.lr,
-                              momentum=args.momentum,
-                              weight_decay=args.weight_decay)
-    elif args.optim_method == 'Adam':
-        optimizer = optim.Adam(model.parameters(), args.lr,
-                               weight_decay=args.weight_decay)
-    else:
-        raise NameError('Only SGD or Adam is allowed as optimize method')
+    optimizer = optim.Adam(model.parameters(), args.lr,
+                           weight_decay=args.weight_decay)
 
     scheduler = MultiStepLR(optimizer, milestones=args.lr_milestones, gamma=0.1)
 
