@@ -34,7 +34,6 @@ class DataReader:
                 self.suffix = suffix
                 break
         assert self.suffix is not None, 'file format does not support!'
-        # logger.info('materials data file format = {}'.format(self.suffix))
         random.seed(random_seed)
         random.shuffle(self.id_prop_data)
 
@@ -138,10 +137,6 @@ class BondFeatureEncoder(object):
         edges_idx, bond_fea = [], []
         for nbr in all_nbrs:
             if len(nbr) < self.max_num_nbr:
-
-                # logger.warning('{} not find enough neighbors to build graph. '
-                #                'If it happens frequently, consider increase '
-                #                'radius.'.format(material_id))
                 edges_idx.append(list(map(lambda x: x[2], nbr)) +
                                  [0] * (self.max_num_nbr - len(nbr)))
                 bond_fea.append(list(map(lambda x: x[1], nbr)) +

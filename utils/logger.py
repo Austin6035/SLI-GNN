@@ -9,8 +9,9 @@ class Log(object):
     def __init__(self, logger=None, file_dir='log', log_file_name='train'):
         self.logger = logging.getLogger(logger)
         self.logger.setLevel(logging.INFO)
+        self.date = time.strftime("%Y_%m_%d")
         self.log_time = datetime.now().strftime("%H:%M:%S")
-        self.log_name = file_dir + "/" + log_file_name + "_" + self.log_time + '.log'
+        self.log_name = file_dir + "/" + log_file_name + "_" + self.date + '_' + self.log_time + '.log'
 
         fh = logging.FileHandler(self.log_name, 'a', encoding='utf-8')
         fh.setLevel(logging.INFO)
