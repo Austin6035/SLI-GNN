@@ -1,9 +1,6 @@
 import os
 import csv
 import random
-import os
-import csv
-import random
 import warnings
 import numpy as np
 import pandas as pd
@@ -14,7 +11,6 @@ from pymatgen.core.structure import Structure, IMolecule
 from pymatgen.core.periodic_table import Element
 from torch_geometric.data import Data
 from utils.utils import *
-# warnings.filterwarnings("ignore", category=Warning)
 
 class DataReader:
 
