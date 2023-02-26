@@ -145,7 +145,7 @@ def main():
 
     logger.info('Normalizer initializing')
     if args.task == 'classification':
-        normalizer = Normalizer(torch.zeros(2, model.atomref_layer))
+        normalizer = Normalizer(torch.zeros(2), model.atomref_layer)
         normalizer.load_state_dict({'mean': 0., 'std': 1.})
     else:
         if len(dataset) < 500:
